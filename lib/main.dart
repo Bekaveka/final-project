@@ -1,56 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'api/api_client.dart';
+import 'api/repositories/auth_repository.dart';
+import 'home_screen.dart';
+import 'registration_screen.dart';
+import 'login_screen.dart';
 
-void main() {
-  runApp(const TestApp());
+void main() async {
+  // Ensure Flutter is initialized
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize shared preferences
+  final prefs = await SharedPreferences.getInstance();
+
+  // Initialize API client
+  await ApiClient.init();
+
+  runApp(
+    MultiProvider(
+      providers: [
+        // Add your providers here
+        Provider<SharedPreferences>.value(value: prefs),
+      ],
+      child: const GoTravelApp(),
+    ),
+  );
 }
-
-class TestApp extends StatelessWidget {
-  const TestApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(title: const Text('API Test')),
-        body: Center(
-          child: ElevatedButton(
-            onPressed: () async {
-              final scaffoldMessenger = ScaffoldMessenger.of(context);
-              try {
-                final dio = Dio();
-                final response = await dio.get(
-                  'http://91.147.104.165:5555/api/v1/health',
-                  options: Options(
-                    headers: {'Accept': 'application/json'},
-                    validateStatus: (_) => true,
-                  ),
-                );
-                scaffoldMessenger.showSnackBar(
-                  SnackBar(
-                    content: Text('Status: ${response.statusCode}\nData: ${response.data}'),
-                    duration: const Duration(seconds: 5),
-                  ),
-                );
-              } catch (e) {
-                scaffoldMessenger.showSnackBar(
-                  SnackBar(
-                    content: Text('Error: $e'),
-                    backgroundColor: Colors.red,
-                    duration: const Duration(seconds: 5),
-                  ),
-                );
-              }
-            },
-            child: const Text('Test API Connection'),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// Simplified main function for testing
 
 class GoTravelApp extends StatelessWidget {
   const GoTravelApp({super.key});
@@ -73,9 +49,7 @@ class GoTravelApp extends StatelessWidget {
           future: AuthRepository.isLoggedIn(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.done) {
-              return snapshot.data == true ? const Scaffold(
-                body: Center(child: Text('Home Screen')),
-              ) : const WelcomeScreen();
+              return snapshot.data == true ? const HomeScreen() : const WelcomeScreen();
             }
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
